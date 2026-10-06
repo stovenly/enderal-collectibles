@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://stovenly.github.io/enderal-collectibles/sitemap.xml
