@@ -31,8 +31,8 @@ TILES = dict(path='map/vyn', size=256, min=2, max=5)
 
 # One-time areas with no place on the painted map get a fixed spot in the sea east of the continent.
 REALM_PINS = {
-    'halfmoon': dict(name='Halfmoon Isle', u=0.935, v=0.585),
-    'starcity': dict(name='Starcity', u=0.935, v=0.665),
+    'halfmoon': dict(name='Halfmoon Isle', u=0.92, v=0.24),
+    'starcity': dict(name='Starcity', u=0.94, v=0.40),
 }
 REALMS = {
     'MQ09Isle': dict(pin='halfmoon', note="Halfmoon Isle, off the east coast. Only reachable during the main quest The Lion's Den."),

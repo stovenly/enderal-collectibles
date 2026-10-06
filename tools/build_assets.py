@@ -1,14 +1,13 @@
 """Builds the icons, mark, favicon, page backdrop and link card in docs/img from Enderal LE's archives."""
-import io, math
+import io
 from pathlib import Path
-from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont, ImageOps
-import bsa
+from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageOps
+import bsa, render
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / 'docs' / 'img'
 FONTS = ROOT / 'research' / 'fonts'
 ICON = 64
-BRONZE = ((52, 36, 20), (236, 214, 170), (176, 141, 87))
 
 
 def tex(path):
@@ -33,95 +32,61 @@ def glow(im, colour, radius):
     return Image.alpha_composite(halo, im)
 
 
-# Spike lengths and angle offsets tracing the carved star in enderalsymbol.dds; its strokes are too thin to cut out.
-SPIKES = [(1.0, 0), (.55, 4), (.92, -6), (.5, 3), (.78, 8), (.48, -4), (1.0, -3), (.52, 6), (.86, 2), (.46, -8), (.7, 5)]
+SYMBOL_MESH = 'meshes/enderal/miscellaneous/enderalsymbolanimatedfx.nif'
+MYSTIC_MESH = 'meshes/enderal/forgottenstories/clutter/enderalsymbolanimatedfx.nif'
+ICE_CLAW_MESH = 'meshes/enderal/landscape/bluemushroom.nif'
+HORN_MESH = 'meshes/enderal/forgottenstories/miscellaneous/lefthorn.nif'
 
 
-def star(dark, light, mid, size=512):
-    S = size
-    c, R = S / 2, S * .47
-    pts = []
-    for k, (length, jitter) in enumerate(SPIKES):
-        a = math.radians(-90 + k * 360 / len(SPIKES) + jitter)
-        b = a + math.radians(180 / len(SPIKES))
-        pts += [(c + R * length * math.cos(a), c + R * length * math.sin(a)), (c + R * .3 * math.cos(b), c + R * .3 * math.sin(b))]
-    shape = Image.new('L', (S, S), 0)
-    ImageDraw.Draw(shape).polygon(pts, fill=255)
-    hole = Image.new('L', (S, S), 0)
-    ImageDraw.Draw(hole).ellipse((c - R * .1, c - R * .1, c + R * .1, c + R * .1), fill=255)
-    shape = ImageChops.subtract(shape, hole)
-    shade = Image.radial_gradient('L').resize((S, S)).point(lambda v: 255 - v)
-    im = ImageOps.colorize(shade, dark, light, mid)
-    im.putalpha(shape)
-    edge = shape.filter(ImageFilter.MaxFilter(9))
-    outline = Image.new('RGBA', (S, S), dark + (255,))
-    outline.putalpha(ImageChops.subtract(edge, shape))
-    return Image.alpha_composite(outline, im)
+def emblem(mesh, glow_strength, ambient=.45):
+    """The Enderal emblem a symbol is modelled as, crescent up and tail down like SureAI's logo."""
+    return render.render(mesh, 768, emissive=glow_strength, ambient=ambient).rotate(90)
 
 
-def symbol_icon(dark, light, mid):
-    return centred(glow(centred(star(dark, light, mid), 256, 20), mid + (170,), 8))
+def symbol_icon(mesh):
+    return centred(emblem(mesh, .7))
+
+
+def brighten(im, k):
+    alpha = im.getchannel('A')
+    im = ImageEnhance.Brightness(im.convert('RGB')).enhance(k).convert('RGBA')
+    im.putalpha(alpha)
+    return im
 
 
 def ice_claw():
-    cap = tex('enderal/plants/eispranke.dds').crop((0, 0, 256, 256))
-    mask = Image.new('L', (256, 256), 0)
-    ImageDraw.Draw(mask).ellipse((10, 10, 246, 246), fill=255)
-    cap.putalpha(mask.filter(ImageFilter.GaussianBlur(2)))
-    cap = ImageOps.autocontrast(cap.convert('RGB'), cutoff=1).convert('RGBA')
-    cap.putalpha(mask.filter(ImageFilter.GaussianBlur(2)))
-    rim = Image.new('RGBA', (256, 256), (0, 0, 0, 0))
-    ImageDraw.Draw(rim).ellipse((10, 10, 246, 246), outline=(18, 40, 52, 255), width=8)
-    return centred(Image.alpha_composite(cap, rim))
+    return centred(render.render(ICE_CLAW_MESH, 512, view=(1, -1, -.5), emissive=.3))
+
+
+def fragment():
+    return centred(glow(centred(brighten(render.render(HORN_MESH, 512, ambient=.8), 2.1), 256, 12), (184, 146, 90, 90), 5))
 
 
 def soul():
-    wisp = tex('effects/magicsquiggles01.dds').crop((0, 0, 512, 512)).convert('L')
-    wisp = ImageOps.autocontrast(wisp, cutoff=0.5)
-    core = wisp.filter(ImageFilter.GaussianBlur(2))
-    im = ImageOps.colorize(core, (20, 60, 52), (240, 255, 248), (120, 214, 180))
-    im.putalpha(wisp.point(lambda v: min(255, int(v * 1.6))))
-    orb = Image.new('RGBA', (512, 512), (190, 245, 220, 0))
-    core_alpha = Image.new('L', (512, 512), 0)
-    core_alpha.paste(Image.radial_gradient('L').resize((300, 300)).point(lambda v: max(0, 210 - v)), (106, 106))
-    orb.putalpha(core_alpha.filter(ImageFilter.GaussianBlur(12)))
-    return centred(glow(centred(Image.alpha_composite(orb, im), 256, 20), (120, 214, 180, 170), 9))
-
-
-def horn():
-    """A Vatyr horn drawn by hand: no fragment texture reads as anything at icon size."""
+    """A ghost: the soul effect is a particle swirl that reads as nothing at icon size."""
     S = 512
-    im = Image.new('RGBA', (S, S), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    pts_l, pts_r = [], []
-    p0, p1, p2 = (120, 440), (60, 120), (400, 70)
-    for k in range(41):
-        t = k / 40
-        x = (1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * p1[0] + t * t * p2[0]
-        y = (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * p1[1] + t * t * p2[1]
-        dx = 2 * (1 - t) * (p1[0] - p0[0]) + 2 * t * (p2[0] - p1[0])
-        dy = 2 * (1 - t) * (p1[1] - p0[1]) + 2 * t * (p2[1] - p1[1])
-        n = math.hypot(dx, dy)
-        w = 62 * (1 - t) ** 1.15 + 3
-        pts_l.append((x - dy / n * w, y + dx / n * w))
-        pts_r.append((x + dy / n * w, y - dx / n * w))
-    outline = pts_l + pts_r[::-1]
-    d.polygon(outline, fill=(214, 192, 150, 255))
-    shade = Image.new('L', (S, S), 0)
-    ImageDraw.Draw(shade).polygon(pts_r + [(S, 0), (S, S)], fill=150)
-    body = Image.new('RGBA', (S, S), (96, 70, 40, 255))
-    body.putalpha(ImageChops.multiply(shade.filter(ImageFilter.GaussianBlur(26)), im.getchannel('A')))
-    im = Image.alpha_composite(im, body)
-    d = ImageDraw.Draw(im)
-    for k in range(4, 36, 4):
-        a, b = pts_l[k], pts_r[k]
-        d.line([a, b], fill=(120, 88, 52, 255), width=7)
-    d.line(outline + [outline[0]], fill=(40, 26, 14, 255), width=12, joint='curve')
-    return centred(glow(im, (184, 146, 90, 120), 10))
+    shape = Image.new('L', (S, S), 0)
+    d = ImageDraw.Draw(shape)
+    d.ellipse((126, 60, 386, 320), fill=255)
+    d.rectangle((126, 190, 386, 400), fill=255)
+    for k in range(4):
+        x = 126 + k * 65
+        d.ellipse((x, 368, x + 65, 440), fill=255 if k % 2 == 0 else 0)
+    for k in (1, 3):
+        x = 126 + k * 65
+        d.ellipse((x, 348, x + 65, 420), fill=0)
+    eyes = Image.new('L', (S, S), 0)
+    e = ImageDraw.Draw(eyes)
+    e.ellipse((190, 170, 236, 236), fill=255)
+    e.ellipse((276, 170, 322, 236), fill=255)
+    shape = ImageChops.subtract(shape.filter(ImageFilter.GaussianBlur(2)), eyes)
+    body = ImageOps.colorize(Image.linear_gradient('L').resize((S, S)), (226, 255, 244), (70, 170, 140), (150, 225, 196))
+    body.putalpha(shape.point(lambda a: int(a * .92)))
+    return centred(glow(centred(body, 256, 18), (110, 214, 176, 190), 9))
 
 
 def mark():
-    return centred(star(*BRONZE, size=800), 200, 4)
+    return centred(brighten(emblem(SYMBOL_MESH, 0, ambient=.9), 2.4), 200, 4)
 
 
 def backdrop():
@@ -167,10 +132,10 @@ def og_card(icons):
 
 OUT.mkdir(parents=True, exist_ok=True)
 icons = {
-    'symbol': symbol_icon((70, 20, 4), (255, 214, 120), (226, 110, 30)),
-    'mystic': symbol_icon((34, 10, 60), (236, 210, 255), (150, 84, 230)),
+    'symbol': symbol_icon(SYMBOL_MESH),
+    'mystic': symbol_icon(MYSTIC_MESH),
     'soul': soul(),
-    'fragment': horn(),
+    'fragment': fragment(),
     'iceclaw': ice_claw(),
 }
 for k, im in icons.items():

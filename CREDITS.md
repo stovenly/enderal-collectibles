@@ -7,9 +7,10 @@ belong to SureAI, including everything here taken from it:
 
 - the collectible placements, read out of `Skyrim.esm` and `Enderal - Forgotten Stories.esm` in both Enderal and
   Enderal Special Edition
-- the Ark at night loading screen behind the page, the main menu painting on the link card, and the Ice Claw and soul
-  textures the icons are made from, taken from the game's archives
-- the shape of the Enderal star that the Magic Symbol, Mystical Symbol and site icons are drawn after
+- the Ark at night loading screen behind the page and the main menu painting on the link card, taken from the game's
+  archives
+- the Magic Symbol, Mystical Symbol, Ice Claw and Vatyra Fragment icons and the Enderal emblem in the masthead,
+  rendered from the game's own meshes and textures
 
 This is a fan project and is not affiliated with or endorsed by SureAI.
 
@@ -49,3 +50,4 @@ All under the [SIL Open Font License 1.1](https://openfontlicense.org).
 | Work | Author | Used for |
 |---|---|---|
 | [Pillow](https://python-pillow.github.io) | Jeffrey A. Clark and contributors | Converting game textures and map tiles, and drawing the icons |
+| [NumPy](https://numpy.org) | NumPy Developers | Rendering the game meshes into icons |

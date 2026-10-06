@@ -194,7 +194,6 @@ h1::after {
 .tip { position: absolute; z-index: 5; pointer-events: none; max-width: 280px; background: rgba(20, 16, 12, .96); color: var(--ink); border: 1px solid var(--panel-edge); box-shadow: 0 4px 12px rgba(0, 0, 0, .7); padding: 6px 10px; font-size: 15px; }
 .tip div + div { margin-top: 3px; }
 .tip-head { font: 12px var(--sc); letter-spacing: .05em; color: var(--bronze); }
-.map-credit { margin: 6px 2px 0; font-size: 13.5px; color: var(--ink-2); text-align: right; }
 
 .crumbs { color: var(--ink-2); font-size: 15px; margin: 0 0 10px; text-shadow: 0 1px 2px #000; }
 
@@ -249,7 +248,8 @@ h1::after {
 .corner-l .corner-pop { left: 0; }
 .corner-r .corner-pop { right: 0; text-align: right; }
 .corner-pop p { margin: 4px 0; }
-.also { font-size: 14.5px; color: var(--ink-2); }
+.made { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.made img { height: 2em; width: auto; }
 .pop-head { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 8px; }
 .pop-head h2 { margin: 0; font: 400 18px var(--sc); letter-spacing: .05em; color: #e8d6b0; }
 .pop-close { border: 0; background: none; color: var(--ink-2); font: 22px/1 Georgia, serif; cursor: pointer; padding: 0 4px; }
