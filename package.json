@@ -1,0 +1,8 @@
+{
+  "name": "enderal-collectibles",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tools/check-saves.js"
+  }
+}
